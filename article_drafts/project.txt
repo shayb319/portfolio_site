@@ -1,0 +1,1086 @@
+
+Analyzing Best Selling Books - Data Visualization Portfolio Project
+Introduction
+
+This project explores the information on the 100 top-selling books, ranked by their worldwide sales, using a range of visualizations. We will discover trends and gain insights into authors, genres, publishing trends, and reader behaviors.
+Source
+
+The dataset that we will use was obtained from Kaggle, Bestsellers Unveiled: Global Top Selling Books by Maria Nadeem. This dataset contains information about the world's best-selling books, with a focus on sales volume and other related details.
+Questions
+
+We will be working with this list of world best-selling books to answer the following questions:
+
+    Which publishers have the most books on the list?
+    What are the most popular genres?
+    Do some genres tend to sell more copies on average than others?
+    Is there a correlation between the number of best-selling books an author or publishers has and their total sales?
+
+Setup
+Import Libraries
+Data Manipulation & Analysis
+
+import pandas as pd
+import numpy as np
+
+
+
+     
+Data Visualization
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.ticker as mticker
+import matplotlib.transforms as mtransforms
+import matplotlib.patches as mpatches
+import squarify
+from sklearn.linear_model import LinearRegression
+
+
+
+     
+Statistical Analysis
+
+import scipy.stats as stats
+import statsmodels.api as sm
+
+
+
+     
+Text Annotation & Adjustment
+
+from adjustText import adjust_text
+
+
+
+     
+Global Settings & Styling
+
+# Set global font, DPI, and Seaborn style
+sns.set_style('whitegrid')
+plt.rcParams['grid.alpha'] = 0.7
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['font.family'] = 'Gill Sans'
+plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['figure.dpi'] = 200
+
+
+
+     
+Helper Functions
+
+# Format x-axis in millions
+def millions_formatter(x, pos):
+    return f'{x / 1e6:.1f}M'
+
+
+def style_graph(
+    ax,
+    title='',
+    xlabel='',
+    ylabel='',
+    title_size=20,
+    label_size=14,
+    title_pad=15,
+    xlabel_pad=15,
+    ylabel_pad=15,
+    xtick_size=12,
+    ytick_size=12,
+    title_linewidth=0.6,
+    xlabel_linewidth=0.3,
+    ylabel_linewidth=0.3,
+    format_x_million=False,
+    format_y_million=False,
+):
+    """
+    Applies consistent styling to a graph axis.
+
+    Parameters:
+        ax: matplotlib Axes object
+        title (str): Graph title
+        xlabel (str): X-axis label
+        ylabel (str): Y-axis label
+        title_size (int): Font size for the title
+        label_size (int): Font size for the axis labels
+        title_pad (int): Padding for the title
+        xlabel_pad (int): Padding for the x axis label
+        ylabel_pad (int): Padding for the y axis label
+        xtick_size (int): Font size for the x ticks
+        ytick_size (int): Font size for the y ticks
+        title_linewidth (float): Line width for the stroke on the title
+        xlabel_linewidth (float): Line width for the stroke on the x label
+        ylabel_linewidth (float): Line width for the stroke on the y label
+        format_x_million (bool): If True, format x-axis ticks in millions
+        format_y_million (bool): If True, format y-axis ticks in millions
+
+
+    """
+    # Apply millions formatter if requested
+    if format_x_million == True:
+        ax.xaxis.set_major_formatter(
+            mticker.FuncFormatter(millions_formatter)
+        )
+    if format_y_million == True:
+        ax.yaxis.set_major_formatter(
+            mticker.FuncFormatter(millions_formatter)
+        )
+    # Set and stylize the title
+    ax.set_title(
+        title, fontsize=title_size, pad=title_pad
+    ).set_path_effects(
+        [
+            path_effects.withStroke(
+                linewidth=title_linewidth, foreground='black'
+            )
+        ]
+    )
+
+    # Set and stylize the axis labels
+    ax.set_xlabel(
+        xlabel, fontsize=label_size, labelpad=xlabel_pad
+    ).set_path_effects(
+        [path_effects.withStroke(linewidth=xlabel_linewidth, foreground='black')]
+    )
+    ax.set_ylabel(
+        ylabel, fontsize=label_size, labelpad=ylabel_pad
+    ).set_path_effects(
+        [path_effects.withStroke(linewidth=ylabel_linewidth, foreground='black')]
+    )
+
+    # Set tick sizes
+    ax.tick_params(axis='x', labelsize=xtick_size)
+    ax.tick_params(axis='y', labelsize=ytick_size)
+
+
+
+     
+Load and Inspect Data
+
+The dataset containing the list of best-selling books is located in the 'datasets' folder.
+
+Let's load and inspect the data of the top 100 best-selling books.
+Load Dataset
+
+books = pd.read_csv('datasets/best_selling_books.csv')
+
+
+
+     
+Inspect Dataset
+
+books.head()
+
+books.info()
+
+books.describe(include='all')
+
+
+books['Genre'].unique()
+
+
+
+ 
+
+books['Publisher'].unique()
+
+
+
+  
+books['Author'].unique()
+
+
+
+  
+One of the unique values within the Author column is '0'. This could be a placeholder or an incorrect entry. Let's filter the dataset to inspect these rows and get some more information on what it represents.
+
+books[books['Author'] == '0']
+
+
+Initial Observations
+
+    The data includes the name of the book, the author, the publisher, the genre, total number of sales and it's rank in the top 100 list.
+    The Volume Sales column is currently of type object when it should be of type int.
+    There are 21 unique Genre categories, which can be reduced down to broader groups to help with analysis.
+    There are a handful of publishers listed that are owned by the same parent company.
+    There is one book record for 'The Beano Annual' that is written by various authors, but currently lists the author as 0.
+    Some of the publisher names are very long and may make some of our visualizations difficult to read.
+    Author names are currently listed in last name, first name format.
+
+Data Cleaning & Preparation
+
+Before we start looking at the data, we need to clean and prepare the dataset.
+
+Here are some updates we will be making:
+
+    Replace any space characters in the column names with an underscore and lowercase all characters to provide easier access to columns.
+    Change the data type of the Volume Sales column from object to int.
+    Create an additional column called 'general_genre' to consolidate the number of unique genre categories into larger groups. This will improve trend analysis while maintaining meaningful distinctions between groups.
+    Create an additional column named parent_company, which will group together publishers that are owned by the same company and list them as Independent if there is no parent company.
+    Replace any instances where Author is 0 to have a value of Various Authors.
+    Create a new column that includes an abbreviated version of the publishers name to make it more concise for use in our visualizations.
+    Extract the first and last name from the author column to create new columns called first_name and last_name. Use those new columns to concatenate the values to create a full_name column. This will help with visualizations.
+    Create individual dataframes that group by the following columns; general_genre, publisher_abbrev, parent_company, and author. Each dataframe will include the total number of books, the sum of volume sales, and some additional features that pertain to each individual topic.
+    Create color palettes to use on our charts and graphs to make them visually engaging.
+
+Optimizing Features
+
+# Standardize column names
+books.columns = books.columns.str.replace(' ', '_').str.lower()
+
+
+# Convert 'volume_sales' from object to int
+books['volume_sales'] = (
+    books['volume_sales'].str.replace(',', '').astype('int')
+)
+
+
+# Replace values of '0' in author column with 'Various Authors'
+books['author'] = books['author'].replace('0', 'Various Authors')
+
+ 
+Generating New Features
+
+# Map specific genres to a broader set of genres
+genre_mapping = {
+    'Crime, Thriller & Adventure': 'Thriller & Mystery',
+    'Science Fiction & Fantasy': 'Science Fiction & Fantasy',
+    "Children's Fiction": "Children's Books",
+    'Picture Books': "Children's Books",
+    "Children's Annuals": "Children's Books",
+    'Young Adult Fiction': 'Young Adult',
+    'Romance & Sagas': 'Romance',
+    'General & Literary Fiction': 'Fiction',
+    'Popular Science': 'Non-Fiction',
+    'Travel Writing': 'Non-Fiction',
+    'Current Affairs & Issues': 'Non-Fiction',
+    'Popular Culture & Media: General Interest': 'Non-Fiction',
+    'Autobiography: General': 'Biography & Memoir',
+    'Biography: The Arts': 'Biography & Memoir',
+    'Autobiography: The Arts': 'Biography & Memoir',
+    'Biography: General': 'Biography & Memoir',
+    'Humour: Collections & General': 'Lifestyle & Entertainment',
+    'Food & Drink: General': 'Lifestyle & Entertainment',
+    'National & Regional Cuisine': 'Lifestyle & Entertainment',
+    'Fitness & Diet': 'Lifestyle & Entertainment',
+    'Usage & Writing Guides': 'Lifestyle & Entertainment',
+}
+books['general_genre'] = books['genre'].map(genre_mapping)
+   
+
+# Map publishers to parent companies
+parent_company_mapping = {
+    'Transworld': 'Penguin Random House',
+    'Random House': 'Penguin Random House',
+    'Random House Childrens Books G': 'Penguin Random House',
+    'Penguin': 'Penguin Random House',
+    'Little, Brown Book': 'Hachette Livre',
+    'Hodder & Stoughton': 'Hachette Livre',
+    'Orion': 'Hachette Livre',
+    'Headline': 'Hachette Livre',
+    'Quercus': 'Hachette Livre',
+    'Pan Macmillan': 'Holtzbrinck Publishing',
+    'HarperCollins': 'News Corp',
+    'Scholastic Ltd.': 'Scholastic Corporation',
+    'Bloomsbury': 'Independent',
+    'Canongate': 'Independent',
+    'Profile Books Group': 'Independent',
+    'D.C. Thomson': 'Independent',
+}
+books['parent_company'] = books['publisher'].map(parent_company_mapping)
+
+
+# Abbreviate publisher names
+publisher_abbreviations = {
+    'Little, Brown Book': 'Little Brown',
+    'Hodder & Stoughton': 'Hodder',
+    'Scholastic Ltd.': 'Scholastic',
+    'Profile Books Group': 'Profile Books',
+    'Random House Childrens Books G': 'Random House Kids',
+}
+books['publisher_abbrev'] = books['publisher'].replace(
+    publisher_abbreviations
+)
+ 
+
+# Parse author name into first name, last name, and full name
+books[['first_name', 'last_name']] = books['author'].str.split(
+    ', ', expand=True
+)[[1, 0]]
+books['full_name'] = books['first_name'] + ' ' + books['last_name']
+
+
+Developing Color Schemes for Graphs
+
+classic_palette = [
+    '#2E3B4E',  # Deep Blue-Gray
+    '#B86B52',  # Warm Brick Red
+    '#D9A84C',  # Muted Gold
+    '#8C6A5D',  # Desaturated Brown
+    '#4F6D7A',  # Cool Slate Blue
+    '#E2C799',  # Soft Sand
+    '#6B8E23',  # Olive Green
+    '#A05A2C',  # Burnt Orange
+    '#5D576B',  # Dusty Purple
+]
+
+     
+Group and Aggregate Data
+
+# Create a dataframe that aggregates values for each general genre
+genre_data = (
+    books.groupby('general_genre')
+    .agg(
+        num_books=('title', 'count'),
+        volume_sales=('volume_sales', 'sum'),
+    )
+    .reset_index()
+)
+
+# Assign a color to each genre
+genre_data['color'] = classic_palette
+
+
+# Create a dataframe that aggregates values for each publisher
+publisher_data = (
+    books.groupby(['parent_company', 'publisher_abbrev'])
+    .agg(
+        num_books=('title', 'count'),
+        volume_sales=('volume_sales', 'sum'),
+    )
+    .reset_index()
+)
+publisher_data['avg_sales_per_book'] = (
+    publisher_data['volume_sales'] / publisher_data['num_books']
+)
+
+# Create a dataframe that aggregates values for each parent company
+parent_data = (
+    books.groupby('parent_company')
+    .agg(
+        num_books=('title', 'count'),
+        volume_sales=('volume_sales', 'sum'),
+    )
+    .reset_index()
+)
+
+# Map a color to each parent company
+parent_data['color'] = classic_palette[:6]
+
+
+# Create a dataframe that aggregates values for each author
+author_data = (
+    books.groupby('author')
+    .agg(
+        num_books=('title', 'count'),
+        volume_sales=('volume_sales', 'sum'),
+        first_name=('first_name', 'first'),
+        last_name=('last_name', 'first'),
+        full_name=('full_name', 'first'),
+        best_rank=('rank', 'min'),
+    )
+    .reset_index()
+)
+author_data['avg_sales_per_book'] = (
+    author_data['volume_sales'] / author_data['num_books']
+)
+     
+Evaluating Cleaned DataFrames
+
+books.head()
+
+books.describe(include='all')
+
+Now that we have cleaned and prepped our book dataset, we can start answering our initial questions through visualization.
+Data Visualizations
+What are the most popular genres?
+
+In order to figure out which genres are most common in the top 100 bestsellers, we need to look at the genres of each book on the list. We'll group the books by genre and count how many titles there are for each genre. Then, we'll present this information in a horizontal bar graph, displaying the number of books in each genre.
+
+# Sort genres by number of books
+gen_book_sorted = genre_data.sort_values(
+    by='num_books', ascending=False
+)
+
+# Assign each genre a color
+genre_palette = dict(
+    zip(genre_data['general_genre'], genre_data['color'])
+)
+
+# Plot a horizontal bar graph of genres
+genre_bar = sns.barplot(
+    data=gen_book_sorted,
+    x='num_books',
+    y='general_genre',
+    hue='general_genre',
+    palette=genre_palette,
+    edgecolor='black',
+)
+
+# Apply style to graph using helper function
+style_graph(
+    ax=genre_bar,
+    title='Most Popular Book Genres',
+    xlabel='Number of Books',
+    ylabel='Genre',
+)
+
+# Set axis to go from 0 to 35
+genre_bar.set_xlim(0, 35)
+
+# Annotate each bar
+for p in genre_bar.patches:
+    genre_bar.annotate(
+        f'{p.get_width():.0f}',
+        (p.get_width() - 0.5, p.get_y() + p.get_height() / 2),
+        ha='right',
+        va='center',
+        fontsize=12,
+        color='white',
+    )
+
+plt.show()
+ 
+
+The bar graph above clearly shows that fiction novels make up the largest percentage of the top 100 bestsellers, accounting for almost one-third of all titles. Following closely behind are children's novels, thrillers, and mysteries, which have similar popularity rates. Interestingly, science fiction and fantasy seem to be less popular, with only two titles on the list.
+Do some genres tend to generate more total sales than others?
+
+Some book genres may not appear often on bestseller lists but could still generate significant sales. To find out, we will examine the total number of copies sold within each general genre. We will use a horizontal bar graph to display the results, similar to the previous graph showing the number of books by genre. This consistency will make it easier to compare both graphs and notice any pattern changes, such as genres that sell well despite having fewer titles or those that are common on the list but contribute less to overall sales.
+
+# Sort genres by volume sales
+gen_sale_sorted = genre_data.sort_values(
+    by='volume_sales', ascending=False
+)
+
+# Plot horizontal bar graph of genres
+genre_bar2 = sns.barplot(
+    data=gen_sale_sorted,
+    y='general_genre',
+    x='volume_sales',
+    hue='general_genre',
+    palette=genre_palette,
+    edgecolor='black',
+)
+
+# Apply style to graph using helper function
+style_graph(
+    ax=genre_bar2,
+    title='Books Sold by Genre',
+    xlabel='Sales (in millions)',
+    ylabel='Genre',
+    xlabel_pad=12,
+    format_x_million=True,
+)
+
+# Set axis to go from 0 to 40 million
+genre_bar2.set_xlim(0, 40e6)
+
+# Annotate each bar
+for p in genre_bar2.patches:
+    genre_bar2.annotate(
+        f'{p.get_width() / 1e6:.1f}M',
+        (p.get_width() - 1.1e6, p.get_y() + p.get_height() / 2),
+        ha='center',
+        va='center',
+        fontsize=9,
+        color='white',
+        fontweight='bold',
+    )
+
+plt.show()
+
+
+The genre rankings remain largely consistent between our graph of 'Most Popular Book Genres' and 'Books Sold by Genre'. Fiction, Children's Books, Thriller & Mystery, and Science Fiction & Fantasy retained their original placements, while the remaining genres shifted by only one or two spots.
+
+However, the gap between the top two genres, Fiction and Children's Books, is less pronounced in the sales graph. Fiction led with 38.5 million, while Children's Books followed closely with 33.8 million, a difference of just 5 million. This suggests that while Children's Books had fewer entries on the list, some individual titles were exceptionally successful.
+Which publishers have the most books on the list?
+
+To effectively answer this question, we can visualize the number of books contributed by each publisher using a bar graph.
+
+# Set figure size
+fig = plt.figure(figsize=(10, 16))
+
+# Sort publishers by number of books
+pub_book_sorted = publisher_data.sort_values(
+    by='num_books', ascending=False
+)
+
+# Assign each publisher a specific color
+publisher_palette = dict(
+    zip(parent_data['parent_company'], parent_data['color'])
+)
+
+# Sort parent companies by number of books
+par_book_sorted = parent_data.sort_values(
+    by='num_books', ascending=False
+)
+
+# Generate squarify labels
+labels = [
+    f'{company}\n{num}'
+    for company, num in zip(
+        par_book_sorted['parent_company'], par_book_sorted['num_books']
+    )
+]
+
+# Plot first subplot, a bar graph of publishers
+publish_bar = plt.subplot(2, 1, 1)
+sns.barplot(
+    data=pub_book_sorted,
+    x='publisher_abbrev',
+    y='num_books',
+    hue='parent_company',
+    palette=publisher_palette,
+    edgecolor='black',
+)
+
+# Plot second subplot, a treemap of parent companies
+parent_squarify = plt.subplot(2, 1, 2)
+parent_squarify = squarify.plot(
+    sizes=par_book_sorted['num_books'],
+    label=labels,
+    color=par_book_sorted['color'],
+    alpha=0.8,
+    edgecolor='black',
+    linewidth=1,
+)
+
+# Apply style to graphs using helper function
+style_graph(
+    ax=publish_bar,
+    title='Top Publishers by Number of Best-Selling Books',
+    xlabel='Publisher',
+    ylabel='Number of Books',
+    xlabel_pad=-4,
+)
+
+style_graph(
+    ax=parent_squarify, title='Parent Companies Behind the Best Sellers'
+)
+
+# Offset and rotate x-tick labels
+fig = publish_bar.get_figure()
+offset = mtransforms.ScaledTranslation(-10 / 72, 0, fig.dpi_scale_trans)
+for label in publish_bar.get_xticklabels():
+    label.set_horizontalalignment('left')
+    label.set_transform(label.get_transform() + offset)
+    label.set_rotation(-35)
+
+# Adjust major ticks on y axis
+publish_bar.yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+
+# Get the limits of the treemap
+x_min, x_max = parent_squarify.get_xlim()
+y_min, y_max = parent_squarify.get_ylim()
+
+# Scale fontsize of treemap labels
+min_font = 10
+max_font = 20
+scaled_fontsizes = min_font + (
+    par_book_sorted['num_books'] / par_book_sorted['num_books'].max()
+) * (max_font - min_font)
+for i, text in enumerate(parent_squarify.texts):
+    text.set_fontsize(scaled_fontsizes.iloc[i])
+
+# Remove axes for treemap
+parent_squarify.axis('off')
+
+# Configure legend
+publish_bar.legend(title='Parent Company')
+
+# Add an outer border to treemap
+border_rect = plt.Rectangle(
+    (x_min, y_min),
+    x_max - x_min,
+    y_max - y_min,
+    edgecolor='black',
+    linewidth=4,
+    fill=False,
+)
+parent_squarify.add_patch(border_rect)
+
+# Adjust spacing betwen subplots
+plt.subplots_adjust(hspace=0.5)
+
+plt.show()
+
+According to the data, Random House is the most dominant publisher, accounting for 19 of the top 100 best-sellers. Notably, the top three publishers, all subsidiaries of Penguin Random House, collectively account for 48 books on this list.
+Which authors have the highest total sales?
+
+The top 100 best-seller book rankings are determined by the total volume sales of a book. Is the same true when looking at the total volume sales by an author, does their highest rank correlate with the total number of books they've sold?
+
+We'll look at the top performing authors in terms of total sales and how they compare to some of the other authors on the list, while also listing the peak rank that an author was able to obtain from a single book.
+
+# Determine if an author is in the top 5 for volume sales
+top_5_sales_threshold = author_data.sort_values(
+    by='volume_sales', ascending=False
+).head(5)['volume_sales']
+author_data['top_5_sales'] = author_data['volume_sales'].apply(
+    lambda x: True if x >= top_5_sales_threshold.min() else False
+)
+
+# Sort authors by volume sales only keeping top 15
+top_auth_sale_sorted = (
+    author_data.sort_values(by='volume_sales', ascending=False)
+    .head(15)
+    .reset_index(drop=True)
+)
+
+# Assign 'top_5_sales' column value a color
+top_5_palette = {False: classic_palette[5], True: classic_palette[0]}
+
+# Plot horizontal bar graph of authors
+top15_total_bar = sns.barplot(
+    data=top_auth_sale_sorted,
+    y='full_name',
+    x='volume_sales',
+    hue='top_5_sales',
+    palette=top_5_palette,
+    legend=False,
+)
+
+# Apply style to graph using helper function
+style_graph(
+    ax=top15_total_bar,
+    title='Top Authors by Total Book Sales',
+    xlabel='Total Sales (in millions)',
+    ylabel='Author',
+    format_x_million=True,
+)
+
+# Set axis to go from 0 to 30 million
+top15_total_bar.set_xlim(0, 30e6)
+
+# Annotate each bar
+for index, row in top_auth_sale_sorted.iterrows():
+    top15_total_bar.text(
+        row['volume_sales'] + 0.2e6,
+        index,
+        f"#{row['best_rank']}",
+        va='center',
+        fontsize=10,
+        color='black',
+    )
+
+# Additional note for label notation
+top15_total_bar.text(
+    21.75e6,
+    14,
+    f'# = Best ranking of any book by the author',
+    va='center',
+)
+
+plt.show()
+
+
+In the graph above, the top 15 authors in terms of total book sales appear. There are 6 authors whose sales have totaled more than 5 million books. They are J.K. Rowling, Dan Brown, E.L. James, Stephanie Meyer, Stieg Larsson, and Jamie Oliver. We can see that the difference in sales between J.K. Rowling and the runner up, Dan Brown, is close to 15 million, almost double the number of sales.
+
+An interesting point to make is that the best-ranked books for each author are not always consistent with their total volume sales. For instance, J.K. Rowling's highest-selling book was ranked number two, despite having the most sales, whereas Dan Brown's book holds the number one spot while having significantly fewer sales. Similarly, Alice Sebold and Mark Haddon placed at the bottom of the top 15 even though their highest-ranked books outperformed a majority of those on this graph.
+
+These observations raise a few questions. How can an author have such a high-ranking book yet still trail behind other authors in overall sales? Conversely, how can an author have such an overwhelming number of sales but not have the highest-ranked book? Was their success the result of a single well-performing book or several releases? Are other authors with fewer titles on the list undervalued, despite their high sales?
+Which authors sell the most per book, and how does that differ from the placement of total sales?
+
+Let's look at a similar graph, but instead of looking at the total volume sales, we'll use the average number of sales per book, while continuing to highlight the same authors with the highest total sales so we can see if there are any shifts.
+
+# Determine if author was in top 15 for volume sales
+author_data['new_top_15_avg'] = author_data['full_name'].apply(
+    lambda x: (
+        False if x in list(top_auth_sale_sorted['full_name']) else True
+    )
+)
+
+# Sort authors by volume sales only keeping the top 15
+top_auth_avg_sorted = (
+    author_data.sort_values(by='avg_sales_per_book', ascending=False)
+    .head(15)
+    .reset_index(drop=True)
+)
+
+# Assign each author a color based on
+# ranking in volume and average sales
+top_auth_avg_sorted['color'] = top_auth_avg_sorted.apply(
+    lambda row: (
+        classic_palette[0]
+        if (row['top_5_sales'] and row['new_top_15_avg'] == False)
+        else (
+            classic_palette[1]
+            if (row['top_5_sales'] == False and row['new_top_15_avg'])
+            else classic_palette[5]
+        )
+    ),
+    axis=1,
+)
+
+# Zip each full name with their corresponding color
+top_15_avg_palette = dict(
+    zip(top_auth_avg_sorted['full_name'], top_auth_avg_sorted['color'])
+)
+
+# Plot horizontal bar graph of authors
+top15_avg_bar = sns.barplot(
+    data=top_auth_avg_sorted,
+    y='full_name',
+    x='avg_sales_per_book',
+    hue='full_name',
+    palette=top_15_avg_palette,
+    legend=False,
+)
+
+# Apply style to graph using helper function
+style_graph(
+    ax=top15_avg_bar,
+    title='Top Authors by Average Sales per Book',
+    xlabel='Average Sales per Book (in millions)',
+    ylabel='Author',
+    format_x_million=True,
+)
+
+# Annotate each bar
+for index, row in top_auth_avg_sorted.iterrows():
+    top15_avg_bar.text(
+        row['avg_sales_per_book'] + 0.2e5,
+        index,
+        f"#{row['best_rank']}",
+        va='center',
+        fontsize=10,
+        color='black',
+    )
+
+# Additional note for label notation
+top15_avg_bar.text(
+    2.4e6,
+    14,
+    f'# = Best ranking of any book by the author',
+    va='center',
+)
+
+# Label legend
+legend_patches = [
+    mpatches.Patch(
+        color=classic_palette[0], label='Top 5 in Total Sales'
+    ),
+    mpatches.Patch(
+        color=classic_palette[5],
+        label='Included in Top 15 of Total Sales',
+    ),
+    mpatches.Patch(
+        color=classic_palette[1],
+        label='Only in Top 15 of Average Sales ',
+    ),
+]
+top15_avg_bar.legend(
+    handles=legend_patches,
+    title='Author Group',
+    loc='lower right',
+    bbox_to_anchor=(0.99, 0.05),
+)
+
+plt.show()
+ 
+
+The top four authors in total sales remained in their positions, though the gap between the top two is significantly smaller. J.K. Rowling's average book sales were 3.2 million, while Dan Brown's average was 2.9 million per book. There was a substantial shift after that. Alice Sebold and Mark Haddon were near the bottom of the top 15 in total sales but now rank fifth and sixth in average sales, respectively, coming between Stieg Larsson's and the others in the top five.
+
+Notably, nearly half of the authors featured in this graph did not appear on the graph for the top 15 in total sales. Further, the best-ranked book for each author seems to align more with their performance in average sales. Compared to the previous graph, this one better represents the success of these best-selling authors because it takes into account the number of books on the list.
+How does the number of books an author has on the list relate to their total sales?
+
+Since we've found that the number of best-selling books per author can affect the total sales in unexpected* ways, let's compare the two features. We'll also highlight the top five authors from the average sales graph to see how they compare to the other authors regarding overall output.
+
+# Set figure size and resolution
+fig, sales_scatter1 = plt.subplots(figsize=(14, 9), dpi=200)
+
+# Get average sales per book values for the top 5 authors
+top_5_avg_threshold = (
+    author_data.sort_values(by='avg_sales_per_book', ascending=False)
+    .head(5)
+    .avg_sales_per_book
+)
+
+# Create new column that assigns True to authors whose average sales per
+# book are within the top 5
+author_data['top_5_avg'] = author_data['avg_sales_per_book'].apply(
+    lambda x: True if x >= top_5_avg_threshold.min() else False
+)
+
+palette = {False: classic_palette[5], True: classic_palette[0]}
+
+# Define alpha values for each category
+alpha_values = {False: 0.5, True: 0.9}
+
+# Plot a scatterplot for each group using different colors and
+# transperancy levels
+for top_5_category in author_data['top_5_avg'].unique():
+    subset = author_data[author_data['top_5_avg'] == top_5_category]
+    sns.scatterplot(
+        data=subset,
+        x='num_books',
+        y='volume_sales',
+        color=palette[top_5_category],
+        edgecolor='black',
+        s=100,
+        alpha=alpha_values[top_5_category],
+        ax=sales_scatter1,
+    )
+
+# Apply style to graph using helper function
+style_graph(
+    ax=sales_scatter1,
+    title='Authors: Total Sales vs. Number of Books',
+    xlabel='Number of Books',
+    ylabel='Total Sales (millions)',
+    format_y_million=True,
+)
+
+# Reformat x-axis and y-axis
+sales_scatter1.set_xlim(xmax=10.4)
+sales_scatter1.xaxis.set_major_locator(mticker.MultipleLocator(1))
+sales_scatter1.set_ylim(ymin=0.0, ymax=30e6)
+sales_scatter1.yaxis.set_major_locator(mticker.MultipleLocator(5e6))
+
+# Annotate author's names
+annotations = []
+for index, row in author_data[author_data.top_5_avg].iterrows():
+    annotations.append(
+        plt.text(
+            row['num_books'] + 0.15,
+            row['volume_sales'] + 150e3,
+            row['full_name'],
+            fontsize=17,
+        )
+    )
+
+# Adjust text to avoid overlapping
+adjust_text(annotations)
+
+# Customize legend
+custom_legend = [
+    plt.Line2D(
+        [0],
+        [0],
+        marker='o',
+        color='w',
+        label='Top 5 Avg Sales per Book',
+        markerfacecolor=palette[True],
+        markersize=12,
+        markeredgecolor='black',
+    )
+]
+sales_scatter1.legend(
+    handles=custom_legend,
+    loc='upper left',
+    borderaxespad=1,
+    fontsize=10,
+)
+
+plt.show()
+
+This graph shows a strong positive correlation between the number of books per author and total sales. Authors with more best-selling books tend to have higher total sales. As expected, J.K. Rowling had the most books on the list, which explains the wide margin in total sales. Dan Brown had fewer books but still achieved high total sales. Despite having fewer books, E.L. James, Stephanie Meyer, and Alice Sebold achieved great success. There are several authors with three to five books that have comparable total sales to those with fewer books. An example of this can be seen with Stephanie Meyer, who has 4 books and E. L. James, who has one less book despite having more sales numbers. This could indicate that not all high-output authors have equal success.
+Which authors exceed or fall short of expectations based on how many best-selling books they have?
+
+Now that we've examined how an author's number of best-selling books relates to total sales, we can determine how successful an author is in comparison to others who have a similar number of best-selling books. The previous graph alone makes it difficult to determine whether an author outperformed expectations, under performed, or followed the general trend.
+
+To demonstrate this, we will fit a linear regression model, which will predict the total sales for an author based on the number of best-selling books they have. Using this model, we will calculate the residuals, which is the difference between the author's actual sales and the regression line's predicted sales. Positive residuals indicate better than expected performance, while negative residuals suggest under performance.
+
+We will first plot the residual graph to highlight authors whose performance was significantly above or below the model's expectations. In this case, authors with residuals greater than ±1.5 standard deviations will be considered notable outliers. In the final graph, we will replot the 'Total Sales vs. Number of Books' scatterplot, but include the regression line and highlight the over and under performers.
+
+# Get feature and target variables
+X = author_data[['num_books']]
+y = author_data['volume_sales']
+
+# Fit regression model
+model = LinearRegression().fit(X, y)
+
+# Get predicted values
+author_data['predicted_sales'] = model.predict(X)
+
+# Prepare values for extended regression line
+x_extended = pd.DataFrame({'num_books': range(0, 12)})
+y_extended = model.predict(x_extended)
+
+# Calculate residuals
+author_data['residuals'] = (
+    author_data['volume_sales'] - author_data['predicted_sales']
+)
+
+# Define threshold for statistical significance
+resid_std = author_data['residuals'].std()
+threshold = 1.5 * resid_std
+author_data['abs_val_resid'] = abs(author_data['residuals'])
+author_data['resid_significant'] = author_data['abs_val_resid'].apply(
+    lambda x: True if x > threshold else False
+)
+
+
+# Set figure size and resolution
+fig, resid_scatter = plt.subplots(figsize=(12,10))
+
+# Palette for significant values
+palette = {True: classic_palette[0], False: classic_palette[2]}
+
+# Define alpha values for each category
+alpha_values = {False: 0.5, True: 0.9}
+
+# Plot scatter plot of residuals
+for residual_category in author_data['resid_significant'].unique():
+    subset = author_data[
+        author_data.resid_significant == residual_category
+    ]
+    sns.scatterplot(
+        data=subset,
+        x='num_books',
+        y='residuals',
+        color=palette[residual_category],
+        edgecolor='black',
+        s=180,
+        alpha=alpha_values[residual_category],
+        ax=resid_scatter,
+    )
+
+# Apply style to graph using helper function
+style_graph(
+    ax=resid_scatter,
+    title='Residuals of Total Sales vs Number of Books',
+    xlabel='Number of Books by Author',
+    ylabel='Residuals (Actual - Predicted Sales)',
+    format_y_million=True,
+)
+
+# Reformat y-axis
+resid_scatter.set_ylim(ymax=6e6)
+resid_scatter.yaxis.set_major_locator(mticker.MultipleLocator(2e6))
+
+# Annotate author's names
+annotations = []
+for index, row in author_data[author_data.resid_significant].iterrows():
+    annotations.append(
+        plt.text(
+            row['num_books'] - 0.3,
+            row['residuals'],
+            row['full_name'],
+            fontsize=14,
+            ha='right',
+        )
+    )
+
+# Adjust text to avoid overlapping
+adjust_text(annotations)
+
+# Customize legend
+custom_legend = [
+    plt.Line2D(
+        [0],
+        [0],
+        marker='o',
+        color='w',
+        label='Significant Residuals',
+        markerfacecolor=palette[True],
+        markersize=10,
+        markeredgecolor='black',
+    )
+]
+resid_scatter.legend(
+    handles=custom_legend,
+    loc='lower right',
+    bbox_to_anchor=(1, 0),
+    borderaxespad=1,
+    fontsize=9,
+)
+
+
+# Plot vertical baseline where y = 0
+resid_scatter.axhline(y=0, color='black', linestyle='--', alpha=0.5)
+
+plt.show()
+
+
+# Highlight authors with largest positive & negative residuals
+top_underperformers = author_data[
+    (author_data['resid_significant']) & (author_data['residuals'] < 0)
+]
+top_overperformers = author_data[
+    (author_data['resid_significant']) & (author_data['residuals'] > 0)
+]
+
+# Plot scatter plot
+sales_scatter2 = sns.scatterplot(
+    x=author_data['num_books'],
+    y=author_data['volume_sales'],
+    color='gray',
+    alpha=0.6,
+    s=50,
+)
+
+# Plot regression line
+sales_scatter2 = sns.lineplot(
+    x=x_extended['num_books'],
+    y=y_extended,
+    color=classic_palette[-1],
+    legend=False,
+    weights=200
+)
+
+# Plot individual scatter plots for over and under performers
+sales_scatter2 = sns.scatterplot(
+    data=top_underperformers,
+    x='num_books',
+    y='volume_sales',
+    color=classic_palette[-2],
+    s=100,
+    label='Underperformers',
+    alpha=0.8,
+    edgecolor='black',
+)
+sales_scatter2 = sns.scatterplot(
+    data=top_overperformers,
+    x='num_books',
+    y='volume_sales',
+    color=classic_palette[-3],
+    s=100,
+    label='Overperformers',
+    edgecolor='black',
+)
+
+# Apply style to graph using helper function
+style_graph(
+    ax=sales_scatter2,
+    title='Sales vs. Number of Books with Residual Highlights',
+    xlabel='Number of Books',
+    ylabel='Total Sales (millions)',
+    format_y_million=True,
+)
+# Reformat x-axis and y-axis
+sales_scatter2.set_xlim(xmin=0.5, xmax=10.5)
+sales_scatter2.xaxis.set_major_locator(mticker.MultipleLocator(1))
+sales_scatter2.set_ylim(ymax=30e6)
+sales_scatter2.yaxis.set_major_locator(mticker.MultipleLocator(5e6))
+
+# Annotate author's names
+annotations = []
+for index, row in author_data[author_data.resid_significant].iterrows():
+    annotations.append(
+        plt.text(
+            row['num_books'] + 0.2,
+            row['volume_sales'] + 250e3,
+            row['full_name'],
+            fontsize=14,
+            ha='left',
+        )
+    )
+
+# Adjust text to avoid overlapping
+adjust_text(annotations)
+
+# Configure legend location and font size
+plt.legend(loc='upper left', fontsize=12)
+
+plt.show()
+
+The first graph plots the residuals from the regression model, which predicts total sales based on the number of best-selling books. The vertical distance from zero indicates an author's over or underperformed relative to the model's predictions, with points beyond ±1.5 standard deviations highlighted. Authors such as Jamie Oliver, Philip Pullman, Bill Bryson, and Julia Donaldson fell significantly short of predicted sales, whereas J.K. Rowling and Dan Brown exceeded expectations. Larger residuals indicate greater deviation from the expected performance, suggesting that having more best-selling books does not guarantee proportionally higher total sales. Other factors, such as genre popularity and reader loyalty, likely influence the outcomes.
+
+The second graph revisits the original scatterplot of total sales versus the number of books but now incorporates the fitted regression line and highlights the same authors identified in the residual graph. This view clearly shows which authors deviate from the general trend, reinforcing the observation that exceptional success or underperformance cannot be fully explained by the number of best-selling books alone.
+Conclusion
+
+In this study, we analyzed patterns in genres, publishers, authors, and sales against predicted models. Certain genres clearly dominate the in best-sellers and publishing power is highly concentrated among a few parent companies. While having more best-selling books usually aligns with higher total sales, the relationship is not perfect. Other unexamined factors may influence author performance.
+
+While we were able to uncover many insights, the study focused solely on the top 100 best-selling books, which means the sample size is limited and success-biased, obscuring the differences among mid-tier performers. Additionally, only sales counts and volume sales were available, which excludes factors such as sales longevity, marketing, genre differences, or the impact of a few popular titles.
+
+Further steps might involve delving deeper into the average sales per book, duration on the best-seller list, and genre-specific patterns to better understand the factors contributing to an author's overall success. Expanding the data beyond the top 100 best-sellers or incorporating data from various years could offer a more comprehensive view.
+
+Moreover, we found that sales success is not solely determined by the number of books published. Exceptional titles can significantly outperform quantity, illustrating the importance of backing targeted marketing, brand development, and quality rather than simply increasing output.
