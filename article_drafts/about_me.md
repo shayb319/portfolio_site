@@ -1,0 +1,13 @@
+I went to college knowing one thing: I loved math. I know, that's a really weird thing to say, not many people do. At least I was going into college with a major in mind. I didn’t know what career it would lead me to, but I knew I was good at thinking critically and solving problems. Math challenged me and I always had fun doing it.
+
+Then I took a required Computer Science I course and everything changed. It was hard. It was confusing. And I couldn’t get enough of it. There’s a moment when you finally get your code to compile, and it works, and you realize you made that logic happen. Those were the moments that felt rewarding and made me realize how much I enjoyed it.
+
+From there, I kept digging. I stuck with my math major and added a computer science minor. I started asking myself: What can I do with both of these skills? That led me to data science — a field that I found was a great mix between logic, exploration, and real-world impact. You get to analyze, optimize, build tools, and actually answer questions that matter. I became hooked.
+
+Along the way, I became a peer tutor in math, helping students who didn’t want to be in those classes find a reason to care. I had to learn how to teach differently, communicate clearly, and meet people where they were. That experience shaped me just as much as any course. It gave me patience, empathy, and an edge in explaining complex ideas in simple terms.
+
+Since then, I've built pipelines, visualized insights, cleaned messy datasets, and optimized AI models. I’ve worked in government contracts, chatbot evaluations, and contact center ops. I’ve used Python, SQL, Jupyter, Tableau, HTML, JavaScript, C++, StreamSets, and more. The most rewarding of all is I’ve felt like I've built real things that made real impacts.
+
+When I’m not diving deep into data, I’m either exploring my creativity, getting lost in imaginary worlds or finding a way to stay grounded. My creativity comes out through my drawings and paintings as well as my passion for music by playing the piano. I love reading a good novel and finding balance through yoga. I like to organize chaos whether that’s writing scripts to streamline my life or building dashboards to track habits, budgets, or random curiosities. My brain likes structure, and I build systems to make life easier and more enjoyable.
+
+I’m someone who likes to figure things out whether it’s the root of a messy dataset or the best way to explain a hard concept. I aim to keep learning, keep building, and keep making sense of complexity.
