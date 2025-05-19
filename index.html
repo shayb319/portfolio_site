@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Shayna Burgos | Projects</title>
+        <title>Shayna Burgos | Home</title>
         <link rel="stylesheet" href="styles/style.css" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap" rel="stylesheet">
         <link rel="apple-touch-icon" sizes="180x180" href="images/favicon_io/apple-touch-icon.png">
@@ -21,6 +21,74 @@
                 <a href="contact.html">Contact</a>
             </nav>
         </header>
+        
+        <section class="hero">
+            <h1>Data Scientist. Problem Solver. System Builder.</h1>
+            <p>
+                I use code, math, and creativity to turn raw data into clear, 
+                actionable insights. With a strong foundation in analysis and 
+                a passion for creating, I craft tools and models that make sense 
+                of complexity.
+            </p>
+            <div class="cta-buttons">
+                <a href="projects.html">View Projects</a>
+                <a href="contact.html">Contact Me</a>
+            </div>
+        </section>
+        <section class="about-snapshot">
+            <h2>Who I Am</h2>
+            <p>
+                I’ve always been drawn to puzzles—whether it was math problems, 
+                coding challenges, or messy datasets. That love for problem-solving 
+                led me into data science: a space where logic, exploration, and 
+                impact meet. I’ve built everything from pipelines and dashboards 
+                to AI-powered tools. I thrive in turning complexity into clarity—
+                and making things that work.
+            </p>
+            <a href="about.html">Read more →</a>
+        </section>
 
+        <section class="skills">
+            <h2>What I Work With</h2>
+            <div class="skills-list">
+                <span>Python</span><span>SQL</span><span>C++</span><span>JavaScript</span><span>Pandas</span>
+                <span>NumPy</span><span>Scikit-learn</span><span>Jupyter</span><span>StreamSets</span>
+                <span>Tableau</span><span>Matplotlib</span><span>Git</span>
+            </div>
+        </section>
+        <section class="project-preview">
+            <h2>What I've Built</h2>
+            <div class="projects-home project-grid"> <!--Three most recent projects--> </div>
+        </section>
+
+        <footer>
+            <p>© Shayna Burgos</p>
+            <p>
+                <a href="http://github.com/shayb319" target="_blank">GitHub</a> |
+                <a href="http://linkedin.com/in/shaynaburgos" target="_blank">LinkedIn</a> |
+                <a href="contact.html">Contact</a>
+            </p>
+        </footer>
+           <!-- <div class="project-wrapper">
+                <img src="images/code_notebook.jpg" alt="Home Image">
+            </div>-->
+        <script src="js/projects.js"></script>
+        <script>
+            const container = document.querySelector('.projects-home');
+            const recentProjects = projects.sort((a, b) => b.order - a.order).slice(0, 3);
+
+            recentProjects.forEach(project => {
+                const card = document.createElement('div');
+                card.classList.add('project-card', 'project-wrapper');
+                card.innerHTML = `
+                    <a href="${project.link}" class="project-link">
+                        <img src="${project.image}" alt="${project.title} thumbnail">
+                        <h3 class="project-title">${project.title}</h3>
+                        <p class="project-description">${project.description}</p>
+                    </a>
+                `;
+                container.appendChild(card)
+            });
+        </script>
     </body>
 </html>
