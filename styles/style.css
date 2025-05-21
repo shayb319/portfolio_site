@@ -4,15 +4,18 @@
     padding: 0;
 }
 
+
 body {
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    background-color: #e3d9d9;
-    color: #333;
-    line-height: 1.7;
-    padding: 2rem;
-    max-width: 960px;
-    margin: auto;
+  font-family: 'Red Hat Display', sans-serif;
+  font-optical-sizing: auto;
+  background-color: #a79292;
+  color: #333;
+  line-height: 1.7;
+  padding: 2rem;
+  max-width: 960px;
+  margin: auto;
 }
+
 
 header, footer {
     display: flex;
@@ -21,7 +24,6 @@ header, footer {
     padding-bottom: 1.2rem;
     border-bottom: 2px solid #7d7c7c;
     margin-bottom: 1.5rem;
-
 }
 
 header h1{
@@ -29,7 +31,6 @@ header h1{
     color:#111;
     font-weight: 300;
 }
-
 
 nav a {
     margin-left: 1.5rem;

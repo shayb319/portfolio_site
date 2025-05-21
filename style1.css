@@ -1,0 +1,59 @@
+body {
+    padding: 0;
+    margin: 0;
+    background: #2e2e2e;
+}
+
+.navbar {
+    background: #000000;
+}
+
+.nav-link, 
+.navbar-name {
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.nav-link {
+    margin-right: 1em !important;
+}
+
+.navbar-name {
+    font-size: 3rem;
+    font-family: "Roboto Flex", sans-serif;
+    margin-left: 0.5em !important;
+}
+.navbar-name:hover {
+    color:#c6600d;
+    text-decoration: none;
+}
+.navbar-link:hover {
+    color: #0d8ec6;
+}
+
+.navbar-collapse {
+    justify-content: flex-end;
+}
+
+.intro-picture {
+    margin-left: 10%;
+    margin-right:2rem
+    right: 50%;
+    position: absolute;
+    top: 30%;
+    text-align: left;
+    transform: translate(20%, 0%);
+    max-width: 400px;
+    fill
+}
+
+.description {
+    color: #ffffff;
+    margin-right: 10%;
+    left:50%;
+    position: absolute;
+    top: 30%;
+    text-align: left;
+    transform: translate(20%, 0%);
+    max-width: 400px;
+}
